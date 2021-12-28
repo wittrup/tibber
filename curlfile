@@ -1,0 +1,64 @@
+#!/bin/bash
+
+
+HEADER='@demo-token-header'
+URL='https://api.tibber.com/v1-beta/gql'
+VERBOSE=false
+
+POSITIONAL=()
+while [[ $# -gt 0 ]]; do
+  key="$1"
+
+  case $key in
+    -h|--header)
+      HEADER="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -u|--url)
+      URL="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -v|--verbose)
+      VERBOSE=true
+      shift # past argument
+      ;;
+    *)    # unknown option
+      POSITIONAL+=("$1") # save it in an array for later
+      shift # past argument
+      ;;
+  esac
+done
+
+set -- "${POSITIONAL[@]}" # restore positional parameters
+
+if [[ "$HEADER" != @* ]]; then HEADER="@$HEADER"; fi
+
+if [ -z "$1" ]; then 
+	>&2 echo "insufficient input parameters"
+	exit 1
+fi
+if [ ! -f "$1" ]; then
+	echo "File not found; '$1'"
+	exit 2
+fi
+ 
+IFS='' read -r -d '' data < <(cat "$1" | tr -d "\t\n" | tr -s '  ')
+
+word1=$(echo "$data" | cut -d'{' -f1)
+if [ -z "$word1" ]; then 
+	word1='query'
+else 
+	word1=''
+fi
+
+data=$(echo "$data" | sed -e 's/"/\\\"/g')
+query="{\"query\":\"$word1${data}\"}"
+
+if [ "$VERBOSE" = true ]; then 
+	echo "QUERY: $query"
+fi
+
+result=$(curl -H "$HEADER" --data-binary "$query" "$URL" 2>/dev/null)
+echo "$result"
