@@ -1,1 +1,5 @@
-personal-token-header
+.idea/*
+
+*-token*
+*.bck
+.coveralls.yml
